@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-
+SCRIPTS_FOLDER=scripts
 # Check required command line args
-if [ "$#" -ne 2 ]; then
+if [ "$#" -le 3 ]; then
     echo "Illegal number of parameters"
-    echo "Usage: ./run.sh <logical cpu> <sampling interval>"
+    echo "Usage: ./run.sh <logical cpu> <sampling interval> <t_test/t_test_separate/graph/cpa> <computations...>"
     exit 1
 fi
-
+LOGICAL_CPU=$1
+SAMPLING_INTERVAL=$2
+MODE=$3
 # Check if venv exists
 if [ ! -d "venv" ]; then
     # Create venv if it doesn't exist
@@ -14,6 +16,8 @@ if [ ! -d "venv" ]; then
     # install necessary python3 packages
     source venv/bin/activate
     pip install matplotlib
+    # install scipy
+    pip install scipy
     # Check if python3-tk is installed (assuming Ubuntu)
     if ! dpkg -s python3-tk >/dev/null 2>&1; then
         # Install python3-tk if it isn't installed
@@ -37,11 +41,37 @@ cd ..
 # sampling interval: The interval in microseconds to sample the power consumption
 # Take the arguments from the first two arguments of the script
 # Check exit code of the executable run with sudo
-if ! sudo ./build/rapl_threaded $1 $2; then
-    # Print error message
-    echo "Error running rapl_threaded"
-    exit 1
+# if ! sudo ./build/rapl_threaded $1 $2 empty,aesniKeyFixedPtVaries,empty,aesniPtFixedKeyVaries; then
+#     # Print error message
+#     echo "Error running rapl_threaded"
+#     exit 1
+# fi
+
+if [[ $MODE == "t_test_separate" ]]; then
+    for((i=4; i<=$#; i++)); do
+        arg="${!i}"
+        sudo ./build/rapl_threaded $1 $2 $arg
+        sudo mv energy_readings.csv $arg.csv
+    done
+else
+    arg="${4}"
+    for((i=5; i<=$#; i++)); do
+        arg+=",${!i}"
+    done
+    sudo ./build/rapl_threaded $1 $2 $arg
 fi
 
 # Plot the results
-python3 energy_power.py energy_readings.csv $2 time_slots.txt
+if [[ $MODE == "graph" ]]; then
+    python3 $SCRIPTS_FOLDER/energy_power.py energy_readings.csv time_slots.txt
+elif [[ $MODE == "t_test" ]]; then
+    python3 $SCRIPTS_FOLDER/t_test.py energy_readings.csv time_slots.txt aesniKeyFixedPtFixed aesniKeyVariesPtFixed
+elif [[ $MODE == "t_test_separate" ]]; then
+    # Following script assumes aesniKeyFixedPtFixed.csv and aesniKeyVariesPtFixed.csv exist
+    python3 $SCRIPTS_FOLDER/t_test_separate.py
+elif [[ $MODE == "cpa" ]]; then
+    python3 $SCRIPTS_FOLDER/cpa.py energy_readings.csv
+else
+    echo "Invalid argument - Expected t_test/graph/cpa"
+    exit 1
+fi

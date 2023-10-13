@@ -5,6 +5,10 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <sstream>
+#include <string>
+#include <functional>
+#include <unordered_map>
 // Linux-specific headers
 #include <bits/chrono.h>
 #include <fcntl.h>
@@ -32,7 +36,8 @@ std::pair<time_point, time_point> intenseComputationTime;
 // and end
 std::pair<time_point, time_point> emptyComputationTime;
 
-void* victimThread(void*) {
+void* victimThread(void* computationNames) {
+    auto const& computationStrings = *static_cast<std::vector<std::string> *>(computationNames);
     // set affinity of this process to PINNED_CPU
     set_affinity(PINNED_CPU);
     // don't start executing until spy thread has started recording the energy
@@ -46,17 +51,12 @@ void* victimThread(void*) {
     remove("time_slots.txt");
 
     // create a vector of computations
-    std::vector<Computation> computations{
-        Computation("aes", aesOpenSSLComputation),
-        Computation("empty1", emptyComputation),
-        Computation("avx", avx2Computation),
-        Computation("aesni", aesniComputation),
-        // Computation("empty2", emptyComputation),
-        Computation("mixed", mixedSIMDComputation),
-        // Computation("empty3", emptyComputation),
+    std::vector<Computation> computations;
+    for (auto const& computationName : computationStrings) {
+	std::cout << "DEBUG: Computation Name -> " << computationName << std::endl;
+        computations.emplace_back(computationParser.at(computationName)());
+    }
 
-        // Computation("empty4", emptyComputation)
-    };
     // execute every computation
     for (auto& comp : computations) {
         comp.performComputation();
@@ -116,16 +116,24 @@ void* spyThread(void*) {
 
 int main(int argc, char** argv) {
     // arg count check
-    if (argc != 3) {
-        printf("Usage: %s <PINNED_CPU> <SAMPLING_INTERVAL>\n", argv[0]);
+    if (argc != 4) {
+        printf("Usage: %s <PINNED_CPU> <SAMPLING_INTERVAL> <ARGS,>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
     // argv[1] = PINNED_CPU
     PINNED_CPU = atoi(argv[1]);
     // argv[2] = SAMPLING_INTERVAL
     SAMPLING_INTERVAL = atoi(argv[2]);
-    // print PID
-    printf("PID: %d\n", getpid());
+
+    // argv[3] = computationNames separated by commas
+    std::vector<std::string> computationNames;
+    // Create a string stream from the input string
+    std::istringstream iss(argv[3]);
+    std::string token;
+    while (std::getline(iss, token, ',')) {
+        // Add each parsed name to the vector
+        computationNames.push_back(token);
+    }
 
     // create a monitoring thread using pthread_create
     pthread_t spyThreadId;
@@ -133,7 +141,7 @@ int main(int argc, char** argv) {
 
     // create a thread using pthread_create
     pthread_t victimThreadId;
-    pthread_create(&victimThreadId, NULL, &victimThread, NULL);
+    pthread_create(&victimThreadId, NULL, &victimThread, &computationNames);
 
     // wait for the victim thread to finish
     pthread_join(victimThreadId, NULL);

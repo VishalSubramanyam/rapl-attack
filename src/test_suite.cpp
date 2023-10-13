@@ -77,10 +77,14 @@ int main() {
         printf("Key scheduling test failed\n");
         return 1;
     }
+    printf("Key scheduling test passed\n");
     // test AES encryption
     if (!testAESEncryption()) {
         printf("AES encryption test failed\n");
         return 1;
     }
+    printf("AES-NI encryption code works correctly (compared against OpenSSL)\n");
+    
+
     return 0;
 }

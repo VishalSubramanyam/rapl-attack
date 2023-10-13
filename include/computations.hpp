@@ -3,17 +3,22 @@
 
 #include <chrono>
 #include <map>
+#include <unordered_map>
+#include <functional>
 #include <stdexcept>
 #include <string>
 using clock_used = std::chrono::steady_clock;
 using time_point = std::chrono::time_point<clock_used>;
 
 extern "C" {
-extern void aesOpenSSLComputation();
 extern void emptyComputation();
+extern void aesOpenSSLComputation();
 extern void avx2Computation();
 extern void mixedSIMDComputation();
 extern void aesniComputation();
+extern void aesniKeyFixedPtFixed();
+extern void aesniKeyVariesPtFixed();
+extern void aesniCPA();
 }
 
 class Computation {
@@ -26,11 +31,7 @@ class Computation {
    public:
     std::string name;
     void (*compFuncPtr)(void);
-    static void init(time_point const &spyStart, uint samplingInt) {
-        spyStartTime = spyStart;
-        samplingInterval = samplingInt;
-        isInitialized = true;
-    }
+    static void init(time_point const &spyStart, uint samplingInt);
     /**
      * @brief Construct a new Computation object
      *
@@ -75,4 +76,14 @@ class Computation {
         printf("Ending computation %s\n", this->name.c_str());
         fflush(stdout);
     }
+};
+std::unordered_map<std::string, std::function<Computation(void)>> const computationParser{
+    {"empty", []() { return Computation("empty", emptyComputation); }},
+    {"aesOpenSSLComputation", []() { return Computation("aesOpenSSLComputation", aesOpenSSLComputation); }},
+    {"avx2Computation", []() { return Computation("avx2Computation", avx2Computation); }},
+    {"mixedSIMDComputation", []() { return Computation("mixedSIMDComputation", mixedSIMDComputation); }},
+    {"aesniComputation", []() { return Computation("aesniComputation", aesniComputation); }},
+    {"aesniKeyFixedPtFixed", []() { return Computation("aesniKeyFixedPtFixed", aesniKeyFixedPtFixed); }},
+    {"aesniKeyVariesPtFixed", []() { return Computation("aesniKeyVariesPtFixed", aesniKeyVariesPtFixed); }},
+    {"aesniCPA", []() { return Computation("aesniCPA", aesniCPA); }},
 };
