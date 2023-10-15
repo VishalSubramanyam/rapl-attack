@@ -2,7 +2,7 @@
 
 #include <emmintrin.h>
 #include <wmmintrin.h>
-
+#include <cstdarg>
 #ifndef LOGGING_NEEDED
 #define LOG(fmt, ...)
 #else

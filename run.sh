@@ -52,6 +52,7 @@ if [[ $MODE == "t_test_separate" ]]; then
         arg="${!i}"
         sudo ./build/rapl_threaded $1 $2 $arg
         sudo mv energy_readings.csv $arg.csv
+        sudo mv time_slots.txt $arg.time.txt
     done
 else
     arg="${4}"
@@ -65,7 +66,7 @@ fi
 if [[ $MODE == "graph" ]]; then
     python3 $SCRIPTS_FOLDER/energy_power.py energy_readings.csv time_slots.txt
 elif [[ $MODE == "t_test" ]]; then
-    python3 $SCRIPTS_FOLDER/t_test.py energy_readings.csv time_slots.txt aesniKeyFixedPtFixed aesniKeyVariesPtFixed
+    python3 $SCRIPTS_FOLDER/t_test.py energy_readings.csv time_slots.txt aesOpenSSLKeyFixedPtFixed aesOpenSSLKeyVariesPtFixed
 elif [[ $MODE == "t_test_separate" ]]; then
     # Following script assumes aesniKeyFixedPtFixed.csv and aesniKeyVariesPtFixed.csv exist
     python3 $SCRIPTS_FOLDER/t_test_separate.py

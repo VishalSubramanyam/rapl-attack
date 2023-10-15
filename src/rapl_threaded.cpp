@@ -10,7 +10,7 @@
 #include <functional>
 #include <unordered_map>
 // Linux-specific headers
-#include <bits/chrono.h>
+//#include <bits/chrono.h>
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -26,7 +26,8 @@ int SAMPLING_INTERVAL = 150;  // microseconds
 auto GLOBAL_START = clock_used::now();
 
 bool victimDone = false;
-bool spyMonitoringStarted = false;
+pthread_spinlock_t spyMonitoring;
+
 time_point spyGraphStartTime;
 
 // time point variable pair for storing the time when intense computation start
@@ -42,10 +43,7 @@ void* victimThread(void* computationNames) {
     set_affinity(PINNED_CPU);
     // don't start executing until spy thread has started recording the energy
     // values
-    while (!spyMonitoringStarted) {
-        // yield to the spy thread
-        sched_yield();
-    }
+    pthread_spin_lock(&spyMonitoring);
     Computation::init(spyGraphStartTime, SAMPLING_INTERVAL);
     // delete time_slots.txt file
     remove("time_slots.txt");
@@ -53,7 +51,7 @@ void* victimThread(void* computationNames) {
     // create a vector of computations
     std::vector<Computation> computations;
     for (auto const& computationName : computationStrings) {
-	std::cout << "DEBUG: Computation Name -> " << computationName << std::endl;
+	    std::cout << "DEBUG: Computation Name -> " << computationName << std::endl;
         computations.emplace_back(computationParser.at(computationName)());
     }
 
@@ -104,7 +102,7 @@ void* spyThread(void*) {
             energyConsumed.push_back(0);
             startTimeCurrentInterval += interval;
         }
-        spyMonitoringStarted = true;
+        pthread_spin_unlock(&spyMonitoring);
     }
     // output energy consumed to energy_readings.csv
     auto energyFile = fopen("energy_readings.csv", "w");
@@ -115,9 +113,14 @@ void* spyThread(void*) {
 }
 
 int main(int argc, char** argv) {
+    if(pthread_spin_init(&spyMonitoring, PTHREAD_PROCESS_PRIVATE) < 0){
+        auto errorString = strerror(errno);
+        std::cerr << "pthread_spin_init() failed: " << errorString << std::endl;
+    }
+    pthread_spin_lock(&spyMonitoring);
     // arg count check
     if (argc != 4) {
-        printf("Usage: %s <PINNED_CPU> <SAMPLING_INTERVAL> <ARGS,>\n", argv[0]);
+        printf("Usage: %s <PINNED_CPU> <SAMPLING_INTERVAL> <COMPUTATION_NAMES,>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
     // argv[1] = PINNED_CPU

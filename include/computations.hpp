@@ -18,6 +18,8 @@ extern void mixedSIMDComputation();
 extern void aesniComputation();
 extern void aesniKeyFixedPtFixed();
 extern void aesniKeyVariesPtFixed();
+extern void aesOpenSSLKeyFixedPtFixed();
+extern void aesOpenSSLKeyVariesPtFixed();
 extern void aesniCPA();
 }
 
@@ -85,5 +87,7 @@ std::unordered_map<std::string, std::function<Computation(void)>> const computat
     {"aesniComputation", []() { return Computation("aesniComputation", aesniComputation); }},
     {"aesniKeyFixedPtFixed", []() { return Computation("aesniKeyFixedPtFixed", aesniKeyFixedPtFixed); }},
     {"aesniKeyVariesPtFixed", []() { return Computation("aesniKeyVariesPtFixed", aesniKeyVariesPtFixed); }},
+    {"aesOpenSSLKeyFixedPtFixed", []() { return Computation("aesOpenSSLKeyFixedPtFixed", aesOpenSSLKeyFixedPtFixed); }},
+    {"aesOpenSSLKeyVariesPtFixed", []() { return Computation("aesOpenSSLKeyVariesPtFixed", aesOpenSSLKeyVariesPtFixed); }},
     {"aesniCPA", []() { return Computation("aesniCPA", aesniCPA); }},
 };

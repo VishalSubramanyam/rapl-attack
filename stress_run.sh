@@ -8,7 +8,7 @@
 
 for i in {1..10}
 do
-    ./run.sh 0 1800 t_test_separate aesniKeyFixedPtFixed aesniKeyVariesPtFixed | tail -n 1 | cut -d " " -f 3 >> t_test_values.txt
+    ./run.sh 0 1800 t_test_separate aesOpenSSLKeyFixedPtFixed aesOpenSSLKeyVariesPtFixed | tail -n 1 | cut -d " " -f 3 >> t_test_values.txt
 done
 
 python3 -c "import statistics; import math; import numpy as np; t_test_values = np.loadtxt('t_test_values.txt'); print('Mean: ' + str(statistics.mean(t_test_values))); print('Median: ' + str(statistics.median(t_test_values))); print('Standard Deviation: ' + str(statistics.stdev(t_test_values))); print('Standard Error: ' + str(statistics.stdev(t_test_values)/math.sqrt(len(t_test_values))));"

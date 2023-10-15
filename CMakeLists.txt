@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 # enable AVX2
 add_compile_options(-maes -mavx2 -masm=intel -s)
 # link libssl-dev to rapl_threaded
-link_libraries(ssl crypto)
+link_libraries(ssl crypto pthread)
 include_directories(include)
 
 add_executable(rapl_simple src/rapl_simple.cpp)

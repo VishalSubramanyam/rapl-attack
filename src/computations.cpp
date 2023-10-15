@@ -91,6 +91,26 @@ void aesniKeyVariesPtFixed() {
     close(fd);
 }
 
+void aesOpenSSLKeyFixedPtFixed(){
+    char key[AES_KEY_SIZE] = "123456789123456";
+    std::string plaintext = "123456789123456";
+    for (int i = 0; i < LOOP_ITER; i++) {
+        std::vector<uint8_t> ciphertext = customAES::aes128_encrypt_cbc_openssl(
+            std::vector<uint8_t>(plaintext.begin(),plaintext.end()), key
+        );
+    }
+}
+
+void aesOpenSSLKeyVariesPtFixed(){
+    std::string plaintext = "123456789123456";
+    for (int i = 0; i < LOOP_ITER; i++) {
+        std::vector<uint8_t> ciphertext = customAES::aes128_encrypt_cbc_openssl(
+            std::vector<uint8_t>(plaintext.begin(), plaintext.end()), pregeneratedKeys[i].data()
+        );
+    }
+}
+
+
 void aesniCPA() {
     std::string key = "123456789123456";
     int const NUM_PLAINTEXTS = 1e6;
